@@ -1,0 +1,331 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historia de One Piece: Arco de Egghead</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #e6f3ff, #a3c9ff);
+            color: #333;
+            overflow-x: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #1a3c6e, #4a7bb8);
+            color: white;
+            text-align: center;
+            padding: 4em 2em;
+            position: relative;
+            overflow: hidden;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 3.5em;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+            animation: slideInFromTop 1s ease-out;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.2);
+            animation: shine 3s infinite;
+        }
+        nav {
+            background: #222;
+            padding: 1em;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        nav a {
+            color: white;
+            margin: 0 1.5em;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        nav a:hover {
+            color: #ffd700;
+            transform: translateY(-2px);
+        }
+        nav a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background: #ffd700;
+            transition: width 0.3s ease;
+        }
+        nav a:hover::after {
+            width: 100%;
+        }
+        .container {
+            width: 85%;
+            margin: auto;
+            padding: 2em;
+        }
+        .section {
+            background: rgba(255,255,255,0.95);
+            padding: 2em;
+            margin-bottom: 2em;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateX(-100px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .section.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .section h2 {
+            color: #1a3c6e;
+            cursor: pointer;
+            position: relative;
+            font-size: 2em;
+            transition: color 0.3s;
+        }
+        .section h2:hover {
+            color: #ffd700;
+        }
+        .section h2::after {
+            content: '▶';
+            position: absolute;
+            right: 15px;
+            transition: transform 0.3s;
+            color: #1a3c6e;
+        }
+        .section.collapsed h2::after {
+            transform: rotate(90deg);
+        }
+        .section-content {
+            transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+            overflow: hidden;
+        }
+        .section.collapsed .section-content {
+            max-height: 0;
+            opacity: 0;
+        }
+        .section img {
+            max-width: 100%;
+            height: auto;
+            margin: 1em 0;
+            border-radius: 10px;
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+        }
+        .section img:hover {
+            transform: scale(1.1) rotate(2deg);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .character-list, .event-list {
+            list-style: none;
+            padding: 0;
+        }
+        .character-list li, .event-list li {
+            background: #f9f9f9;
+            padding: 1em;
+            margin: 0.5em 0;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+        .character-list li:hover, .event-list li:hover {
+            background: #e0f0ff;
+        }
+        footer {
+            background: #222;
+            color: white;
+            text-align: center;
+            padding: 2em;
+            width: 100%;
+            animation: fadeIn 2s ease;
+        }
+        footer p {
+            margin: 0;
+            font-size: 1.1em;
+        }
+        @keyframes slideInFromTop {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shine {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @media (max-width: 768px) {
+            header h1 { font-size: 2.2em; }
+            nav a { margin: 0 0.8em; font-size: 1em; }
+            .container { width: 95%; }
+            .section h2 { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Historia de One Piece: Arco de Egghead</h1>
+    </header>
+
+    <nav>
+        <a href="#introduccion">Introducción</a>
+        <a href="#personajes">Personajes</a>
+        <a href="#eventos">Eventos Clave</a>
+        <a href="#tecnologia">Tecnología</a>
+    </nav>
+
+    <div class="container">
+        <div class="section" id="introduccion">
+            <h2>Introducción al Arco de Egghead</h2>
+            <div class="section-content">
+                <p>El arco de Egghead, parte del arco final de *One Piece* creado por Eiichiro Oda, marca un punto de inflexión en la narrativa. La isla de Egghead, un laboratorio futurista liderado por el Dr. Vegapunk, introduce elementos de ciencia avanzada y revelaciones cruciales sobre el mundo de *One Piece*. Los Piratas del Sombrero de Paja llegan a esta isla tras los eventos de Wano, enfrentándose a un entorno lleno de innovaciones tecnológicas y peligros inesperados.</p>
+                <img src="images/historia1.jpg" alt="Isla de Egghead">
+            </div>
+        </div>
+
+        <div class="section" id="personajes">
+            <h2>Personajes Principales</h2>
+            <div class="section-content">
+                <p>El arco de Egghead presenta tanto a personajes nuevos como a los queridos Piratas del Sombrero de Paja, quienes enfrentan desafíos únicos mientras interactúan con el Dr. Vegapunk y sus creaciones.</p>
+                <ul class="character-list">
+                    <li><strong>Dr. Vegapunk</strong>: El científico más brillante del mundo, líder de los laboratorios de Egghead. Su mente está dividida en seis satélites, cada uno con una personalidad y función distinta.</li>
+                    <li><strong>Shaka</strong>: El satélite de Vegapunk que representa la lógica y la estrategia, juega un papel clave en las decisiones críticas del arco.</li>
+                    <li><strong>Lilith</strong>: El satélite que encarna el lado malévolo y ambicioso de Vegapunk, a menudo en conflicto con los ideales de los Sombrero de Paja.</li>
+                    <li><strong>Monkey D. Luffy</strong>: El capitán de los Piratas del Sombrero de Paja, cuya determinación lo lleva a enfrentarse al Gobierno Mundial y a descubrir secretos del Siglo Vacío.</li>
+                    <li><strong>Jewelry Bonney</strong>: Una supernova con conexiones personales con Vegapunk, cuya presencia añade profundidad emocional a la trama.</li>
+                </ul>
+                <img src="images/historia2.jpg" alt="Dr. Vegapunk y satélites">
+            </div>
+        </div>
+
+        <div class="section" id="eventos">
+            <h2>Eventos Clave</h2>
+            <div class="section-content">
+                <p>El arco de Egghead está repleto de momentos significativos que avanzan la narrativa hacia su clímax. Algunos de los eventos más destacados incluyen:</p>
+                <ul class="event-list">
+                    <li><strong>Llegada a Egghead</strong>: Los Sombrero de Paja naufragan en la isla invernal de Egghead, donde descubren un laboratorio futurista lleno de tecnología avanzada, incluyendo robots y hologramas.</li>
+                    <li><strong>Encuentro con Vegapunk</strong>: La tripulación conoce al Dr. Vegapunk y sus satélites, quienes revelan información crucial sobre las Frutas del Diablo y el Siglo Vacío.</li>
+                    <li><strong>Traición del CP0</strong>: El Gobierno Mundial envía al CP0 para eliminar a Vegapunk, desencadenando una batalla masiva que involucra a los Sombrero de Paja, los satélites y los agentes del gobierno.</li>
+                    <li><strong>Revelaciones del Siglo Vacío</strong>: Vegapunk comparte secretos sobre los Poneglyphs y la historia oculta del mundo, incluyendo detalles sobre la antigua arma Uranus.</li>
+                    <li><strong>Escape de Egghead</strong>: La isla entra en caos cuando el Gobierno Mundial intensifica su ataque, forzando a los Sombrero de Paja a planear una huida mientras protegen a Vegapunk.</li>
+                </ul>
+                <img src="images/historia3.jpg" alt="Batalla en Egghead">
+            </div>
+        </div>
+
+        <div class="section" id="tecnologia">
+            <h2>Tecnología y Misterios</h2>
+            <div class="section-content">
+                <p>Egghead es un escaparate de tecnología futurista que redefine el mundo de *One Piece*. Los inventos de Vegapunk, como los Pacifistas mejorados y los sistemas de defensa holográfica, son centrales en la narrativa. Además, los misterios sobre los Poneglyphs y el papel de Vegapunk en el Gobierno Mundial mantienen a los lectores en vilo.</p>
+                <img src="images/historia4.jpg" alt="Tecnología de Egghead">
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Presentación sobre One Piece: Arco de Egghead</p>
+    </footer>
+
+    <script>
+        // Animación al hacer scroll
+        const sections = document.querySelectorAll('.section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.3 });
+
+        sections.forEach(section => observer.observe(section));
+
+        // Colapsar/expandir secciones con animación
+        const headers = document.querySelectorAll('.section h2');
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const section = header.parentElement;
+                const content = section.querySelector('.section-content');
+                section.classList.toggle('collapsed');
+                if (!section.classList.contains('collapsed')) {
+                    content.style.maxHeight = `${content.scrollHeight}px`;
+                    content.style.opacity = '1';
+                } else {
+                    content.style.maxHeight = '0';
+                    content.style.opacity = '0';
+                }
+            });
+        });
+
+        // Ajustar altura inicial de las secciones
+        document.querySelectorAll('.section-content').forEach(content => {
+            content.style.maxHeight = `${content.scrollHeight}px`;
+            content.style.opacity = '1';
+        });
+
+        // Animación de desplazamiento suave para los enlaces de navegación
+        document.querySelectorAll('nav a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                targetElement.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
